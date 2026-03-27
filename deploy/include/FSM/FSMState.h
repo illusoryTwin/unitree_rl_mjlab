@@ -72,6 +72,39 @@ public:
             }
         }
 
+        // Register auto-transition (time-based) if configured
+        auto auto_next_cfg = param::config["FSM"][state_string]["auto_next"];
+        if(auto_next_cfg)
+        {
+            std::string target_fsm = auto_next_cfg.as<std::string>();
+            if(!FSMStringMap.right.count(target_fsm))
+            {
+                spdlog::warn("auto_next target '{}' not found in FSMStringMap!", target_fsm);
+            }
+            else
+            {
+                int fsm_id = FSMStringMap.right.at(target_fsm);
+                float delay = 1.0f;
+                auto delay_cfg = param::config["FSM"][state_string]["auto_delay"];
+                if(delay_cfg) delay = delay_cfg.as<float>();
+
+                registered_checks.emplace_back(
+                    std::make_pair(
+                        [this, delay]()->bool{
+                            if(this->auto_enter_time_ == 0.0) return false;
+                            double now = std::chrono::duration<double>(
+                                std::chrono::steady_clock::now().time_since_epoch()
+                            ).count();
+                            return (now - this->auto_enter_time_) >= delay;
+                        },
+                        fsm_id
+                    )
+                );
+                spdlog::info("State_{}: auto-transition to '{}' after {:.1f}s",
+                             state_string, target_fsm, delay);
+            }
+        }
+
         // register for all states
         registered_checks.emplace_back(
             std::make_pair(

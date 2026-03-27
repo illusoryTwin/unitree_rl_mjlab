@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <unitree/common/thread/recurrent_thread.hpp>
 #include "BaseState.h"
 #include <spdlog/spdlog.h>
@@ -45,10 +46,11 @@ public:
         }
     }
 
-    void start() 
+    void start()
     {
         // Start From State_Passive
         currentState = states[0];
+        currentState->auto_enter_time_ = now_sec_();
         currentState->enter();
 
         fsm_thread_ = std::make_shared<unitree::common::RecurrentThread>(
@@ -105,11 +107,19 @@ private:
                     spdlog::info("FSM: Change state from {} to {}", currentState->getStateString(), state->getStateString());
                     currentState->exit();
                     currentState = state;
+                    currentState->auto_enter_time_ = now_sec_();
                     currentState->enter();
                     break;
                 }
             }
         }
+    }
+
+    static double now_sec_()
+    {
+        return std::chrono::duration<double>(
+            std::chrono::steady_clock::now().time_since_epoch()
+        ).count();
     }
 
     std::shared_ptr<BaseState> currentState;

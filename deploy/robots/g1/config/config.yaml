@@ -21,6 +21,8 @@ FSM:
       FixStand: LT + up.on_pressed
     keyboard_transitions:
       FixStand: "0"
+    auto_next: FixStand
+    auto_delay: 0.5
     mode: [
       1,1,1,1,1,1,
       1,1,1,1,1,1,
@@ -46,6 +48,8 @@ FSM:
       Passive: "1"
       Velocity: "3"
       G1Custom: "4"
+    auto_next: G1Custom
+    auto_delay: 3.0  # 2s standup trajectory + 1s stabilization
 
     kp: [
       100,100,100,150,40,40,

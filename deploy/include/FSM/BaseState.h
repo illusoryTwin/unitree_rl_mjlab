@@ -13,7 +13,7 @@ inline boost::bimap<int, std::string> FSMStringMap;
 class BaseState
 {
 public:
-    BaseState(int state, std::string state_string) : state_(state) 
+    BaseState(int state, std::string state_string) : state_(state)
     {
         FSMStringMap.insert({state, state_string});
     }
@@ -30,6 +30,9 @@ public:
     int getState() {return state_; }
     bool isState(int state) { return state_ == state; }
     std::vector<std::pair<std::function<bool()>, int>> registered_checks;
+
+    // Timestamp (seconds) when this state was last entered; set by CtrlFSM.
+    double auto_enter_time_ = 0.0;
 private:
     int state_;
 };
