@@ -7,6 +7,9 @@ FSM:
     Velocity:
       id: 3
       type: RLBase
+    G1Custom:
+      id: 4
+      type: RLBase
 
     Mimic_Dance1_subject2:
       id: 5
@@ -14,8 +17,10 @@ FSM:
 
 
   Passive:
-    transitions: 
+    transitions:
       FixStand: LT + up.on_pressed
+    keyboard_transitions:
+      FixStand: "0"
     mode: [
       1,1,1,1,1,1,
       1,1,1,1,1,1,
@@ -33,9 +38,14 @@ FSM:
 
 
   FixStand:
-    transitions: 
+    transitions:
       Passive: LT + B.on_pressed
       Velocity: RT + A.on_pressed
+      G1Custom: RT + Y.on_pressed
+    keyboard_transitions:
+      Passive: "1"
+      Velocity: "3"
+      G1Custom: "4"
 
     kp: [
       100,100,100,150,40,40,
@@ -64,17 +74,31 @@ FSM:
 
 
   Velocity:
-    transitions: 
+    transitions:
       Passive: LT + B.on_pressed
       Mimic_Dance1_subject2: RB + A.on_pressed
+    keyboard_transitions:
+      Passive: "1"
+      Mimic_Dance1_subject2: "5"
 
     policy_dir: config/policy/velocity
+
+
+  G1Custom:
+    transitions:
+      Passive: LT + B.on_pressed
+    keyboard_transitions:
+      Passive: "1"
+    policy_dir: config/policy/g1_custom
 
 
   Mimic_Dance1_subject2:
     transitions:
       Passive: LT + B.on_pressed
       Velocity: RT + A.on_pressed
+    keyboard_transitions:
+      Passive: "1"
+      Velocity: "3"
 
     motion_file: config/policy/mimic/dance1_subject2/params/dance1_subject2.npz
     policy_dir: config/policy/mimic/dance1_subject2/

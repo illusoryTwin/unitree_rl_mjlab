@@ -48,9 +48,11 @@ int main(int argc, char** argv)
     auto fsm = std::make_unique<CtrlFSM>(param::config["FSM"]);
     fsm->start();
 
-    std::cout << "Press [L2 + Up] to enter FixStand mode.\n";
-    std::cout << "And then press [R2 + A] to start controlling the robot.\n";
-    std::cout << "And then press [R1 + A/B/Y/X] to control the robot dance.\n";
+    std::cout << "Press [L2 + Up] or keyboard [0] to enter FixStand mode.\n";
+    std::cout << "Then  [R2 + A]  or keyboard [3] to start Velocity policy.\n";
+    std::cout << "      [R2 + Y]  or keyboard [4] to start G1Custom policy.\n";
+    std::cout << "      [R1 + A]  or keyboard [5] to start Mimic dance.\n";
+    std::cout << "      [L2 + B]  or keyboard [1] to return to Passive.\n";
 
     while (true)
     {

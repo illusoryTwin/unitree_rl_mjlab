@@ -550,6 +550,9 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
       sim->Load(m, d, filename);
       mj_forward(m, d);
 
+      // Start paused so robot doesn't fall before controller connects
+      sim->run = 0;
+
       // allocate ctrlnoise
       free(ctrlnoise);
       ctrlnoise = static_cast<mjtNum *>(malloc(sizeof(mjtNum) * m->nu));
