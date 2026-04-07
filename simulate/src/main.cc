@@ -85,6 +85,92 @@ public:
 };
 inline ElasticBand elastic_band;
 
+// Hand perturbation for compliance testing
+//
+// Hold two keys together: hand selector + direction
+//   F = left hand,  G = right hand
+//   X/Y/Z        = force along axis   (Shift to flip sign)
+//   Ctrl+X/Y/Z   = torque around axis (Shift to flip sign)
+//   T = cycle target body (wrist_yaw -> wrist_pitch -> wrist_roll -> elbow -> shoulder)
+//   [ / ] = decrease / increase magnitude
+//
+struct PerturbationState
+{
+  bool left_active = false;
+  bool right_active = false;
+  int left_body_id = -1;
+  int right_body_id = -1;
+  double magnitude = 50.0;         // force in N / torque in Nm
+  double force[3] = {0, 0, 0};    // current force vector (world frame)
+  double torque[3] = {0, 0, 0};   // current torque vector (world frame)
+
+  // Body target cycling
+  struct BodyTarget {
+    const char *left_name;
+    const char *right_name;
+    const char *label;
+    int left_id;
+    int right_id;
+  };
+  static const int MAX_TARGETS = 10;
+  BodyTarget targets[MAX_TARGETS];
+  int num_targets = 0;
+  int current_target = 0;
+
+  void resolveBodyIds(const mjModel *model)
+  {
+    // Candidate body pairs to try (order = cycling order)
+    static const char *candidates[][3] = {
+      {"left_wrist_yaw_link",          "right_wrist_yaw_link",          "wrist_yaw"},
+      {"left_wrist_pitch_link",        "right_wrist_pitch_link",        "wrist_pitch"},
+      {"left_wrist_roll_link",         "right_wrist_roll_link",         "wrist_roll"},
+      {"left_wrist_roll_rubber_hand",  "right_wrist_roll_rubber_hand",  "wrist_roll (23dof)"},
+      {"left_elbow_link",              "right_elbow_link",              "elbow"},
+      {"left_shoulder_yaw_link",       "right_shoulder_yaw_link",       "shoulder_yaw"},
+      {"left_shoulder_roll_link",      "right_shoulder_roll_link",      "shoulder_roll"},
+      {"left_shoulder_pitch_link",     "right_shoulder_pitch_link",     "shoulder_pitch"},
+      {nullptr, nullptr, nullptr}
+    };
+
+    num_targets = 0;
+    for (int i = 0; candidates[i][0] != nullptr && num_targets < MAX_TARGETS; i++)
+    {
+      int lid = mj_name2id(model, mjOBJ_BODY, candidates[i][0]);
+      int rid = mj_name2id(model, mjOBJ_BODY, candidates[i][1]);
+      if (lid >= 0 && rid >= 0)
+      {
+        targets[num_targets] = {candidates[i][0], candidates[i][1], candidates[i][2], lid, rid};
+        num_targets++;
+      }
+    }
+
+    if (num_targets > 0)
+    {
+      current_target = 0;
+      left_body_id = targets[0].left_id;
+      right_body_id = targets[0].right_id;
+      std::printf("[Perturbation] Ready. Available targets (%d):\n", num_targets);
+      for (int i = 0; i < num_targets; i++)
+        std::printf("  %s %s\n", (i == 0) ? "->" : "  ", targets[i].label);
+      std::printf("[Perturbation] T=cycle target, F/G+X/Y/Z=force, Ctrl+X/Y/Z=torque, [/]=magnitude (%.0f)\n",
+                  magnitude);
+    }
+    else
+    {
+      std::printf("[Perturbation] Warning: no arm bodies found in model\n");
+    }
+  }
+
+  void cycleTarget()
+  {
+    if (num_targets <= 0) return;
+    current_target = (current_target + 1) % num_targets;
+    left_body_id = targets[current_target].left_id;
+    right_body_id = targets[current_target].right_id;
+    std::printf("[Perturbation] Target: %s\n", targets[current_target].label);
+  }
+};
+inline PerturbationState perturbation;
 
 namespace
 {
@@ -502,6 +588,44 @@ namespace
                   }
                 }
 
+                // apply perturbation forces and torques on hands
+                if (perturbation.left_body_id >= 0)
+                {
+                  int idx = 6 * perturbation.left_body_id;
+                  if (perturbation.left_active)
+                  {
+                    d->xfrc_applied[idx + 0] = perturbation.force[0];
+                    d->xfrc_applied[idx + 1] = perturbation.force[1];
+                    d->xfrc_applied[idx + 2] = perturbation.force[2];
+                    d->xfrc_applied[idx + 3] = perturbation.torque[0];
+                    d->xfrc_applied[idx + 4] = perturbation.torque[1];
+                    d->xfrc_applied[idx + 5] = perturbation.torque[2];
+                  }
+                  else
+                  {
+                    for (int i = 0; i < 6; i++)
+                      d->xfrc_applied[idx + i] = 0;
+                  }
+                }
+                if (perturbation.right_body_id >= 0)
+                {
+                  int idx = 6 * perturbation.right_body_id;
+                  if (perturbation.right_active)
+                  {
+                    d->xfrc_applied[idx + 0] = perturbation.force[0];
+                    d->xfrc_applied[idx + 1] = perturbation.force[1];
+                    d->xfrc_applied[idx + 2] = perturbation.force[2];
+                    d->xfrc_applied[idx + 3] = perturbation.torque[0];
+                    d->xfrc_applied[idx + 4] = perturbation.torque[1];
+                    d->xfrc_applied[idx + 5] = perturbation.torque[2];
+                  }
+                  else
+                  {
+                    for (int i = 0; i < 6; i++)
+                      d->xfrc_applied[idx + i] = 0;
+                  }
+                }
+
                 // call mj_step
                 mj_step(m, d);
                 stepped = true;
@@ -595,7 +719,10 @@ void *UnitreeSdk2BridgeThread(void *arg)
     body_id = mj_name2id(m, mjOBJ_BODY, "base_link");
   }
   param::config.band_attached_link = 6 * body_id;
-  
+
+  // Resolve hand body IDs for perturbation testing
+  perturbation.resolveBodyIds(m);
+
   std::unique_ptr<UnitreeSDK2BridgeBase> interface = nullptr;
   if (m->nu > NUM_MOTOR_IDL_GO) {
     interface = std::make_unique<G1Bridge>(m, d);
@@ -623,8 +750,65 @@ __attribute__((used, visibility("default"))) extern "C" void _mj_rosettaError(co
 
 // user keyboard callback
 void user_key_cb(GLFWwindow* window, int key, int scancode, int act, int mods) {
+  // --- Perturbation: hand selection (hold F=left, G=right) ---
+  if (key == GLFW_KEY_F) {
+    perturbation.left_active = (act != GLFW_RELEASE);
+  }
+  if (key == GLFW_KEY_G) {
+    perturbation.right_active = (act != GLFW_RELEASE);
+  }
+
+  // --- Perturbation: direction keys ---
+  //   X/Y/Z        = force along axis
+  //   Ctrl+X/Y/Z   = torque around axis
+  //   Shift flips sign for both
+  {
+    bool shift = (mods & GLFW_MOD_SHIFT);
+    bool ctrl = (mods & GLFW_MOD_CONTROL);
+    double sign = shift ? -1.0 : 1.0;
+    double val = (act != GLFW_RELEASE) ? sign * perturbation.magnitude : 0;
+
+    if (key == GLFW_KEY_X) {
+      if (ctrl) perturbation.torque[0] = val;
+      else      perturbation.force[0] = val;
+    }
+    if (key == GLFW_KEY_Y) {
+      if (ctrl) perturbation.torque[1] = val;
+      else      perturbation.force[1] = val;
+    }
+    if (key == GLFW_KEY_Z) {
+      if (ctrl) perturbation.torque[2] = val;
+      else      perturbation.force[2] = val;
+    }
+  }
+
+  // Log on press/release of hand keys
+  if (key == GLFW_KEY_F || key == GLFW_KEY_G) {
+    const char *hand = (key == GLFW_KEY_F) ? "LEFT" : "RIGHT";
+    if (act == GLFW_PRESS) {
+      std::printf("[Perturbation] %s hand active (%.0fN)\n", hand, perturbation.magnitude);
+    } else if (act == GLFW_RELEASE) {
+      std::printf("[Perturbation] %s hand released\n", hand);
+    }
+  }
+
   if (act==GLFW_PRESS)
   {
+    // Perturbation: cycle target body
+    if (key == GLFW_KEY_T) {
+      perturbation.cycleTarget();
+    }
+    // Perturbation magnitude
+    if (key == GLFW_KEY_LEFT_BRACKET) {
+      perturbation.magnitude = std::max(10.0, perturbation.magnitude - 10.0);
+      std::printf("[Perturbation] Magnitude: %.0fN\n", perturbation.magnitude);
+    }
+    if (key == GLFW_KEY_RIGHT_BRACKET) {
+      perturbation.magnitude += 10.0;
+      std::printf("[Perturbation] Magnitude: %.0fN\n", perturbation.magnitude);
+    }
+
+    // Elastic band controls
     if(param::config.enable_elastic_band == 1) {
       if (key==GLFW_KEY_9) {
         elastic_band.enable_ = !elastic_band.enable_;

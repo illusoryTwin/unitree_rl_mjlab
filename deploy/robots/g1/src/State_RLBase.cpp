@@ -38,6 +38,14 @@ REGISTER_OBSERVATION(joint_pos_command)
     return defaults;
 }
 
+// Scalar stiffness command for g1_soft task.
+// Returns the fixed stiffness value configured in deploy.yaml.
+REGISTER_OBSERVATION(stiffness_command)
+{
+    float value = params["value"].as<float>();
+    return std::vector<float>{value};
+}
+
 }
 
 State_RLBase::State_RLBase(int state_mode, std::string state_string)
