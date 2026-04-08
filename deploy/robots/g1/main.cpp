@@ -52,6 +52,7 @@ int main(int argc, char** argv)
     std::cout << "Then  [R2 + A]  or keyboard [3] to start Velocity policy.\n";
     std::cout << "      [R2 + Y]  or keyboard [4] to start G1Custom policy.\n";
     std::cout << "      [R1 + A]  or keyboard [5] to start Mimic dance.\n";
+    std::cout << "      [R2 + X]  or keyboard [6] to start G1Soft policy.\n";
     std::cout << "      [L2 + B]  or keyboard [1] to return to Passive.\n";
 
     while (true)

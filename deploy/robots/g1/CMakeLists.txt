@@ -13,19 +13,27 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
     set(ONNXRUNTIME_DIR "${PROJECT_SOURCE_DIR}/../../thirdparty/onnxruntime-linux-aarch64-1.22.0")
 endif()
 
+set(UNITREE_SDK2_DIR "${PROJECT_SOURCE_DIR}/../../../../unitree_sdk2")
+
 include_directories(
   /usr/include/eigen3
-  /usr/local/include/ddscxx
-  /usr/local/include/iceoryx/v2.0.2
+  ${UNITREE_SDK2_DIR}/thirdparty/include
+  ${UNITREE_SDK2_DIR}/thirdparty/include/ddscxx
   include
   ${ONNXRUNTIME_DIR}/include
   ${PROJECT_SOURCE_DIR}/../../include/
   ${PROJECT_SOURCE_DIR}/../../thirdparty/cnpy
+  ${UNITREE_SDK2_DIR}/include
 )
 
 file(GLOB CNPY_SRC ${PROJECT_SOURCE_DIR}/../../thirdparty/cnpy/*.cpp)
 
 add_library(cnpy_lib STATIC ${CNPY_SRC})
+
+link_directories(
+  ${UNITREE_SDK2_DIR}/lib/${CMAKE_SYSTEM_PROCESSOR}
+  ${UNITREE_SDK2_DIR}/thirdparty/lib/${CMAKE_SYSTEM_PROCESSOR}
+)
 
 link_libraries(
   unitree_sdk2
