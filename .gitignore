@@ -12,3 +12,6 @@ deploy/robots/r1/build
 deploy/robots/a2/build
 src/assets/motions/g1/dance1_subject2.npz
 simulate/build
+
+deploy/robots/g1/config/policy/v1/
+deploy/robots/g1/config/policy/g1_soft/v0/exported/*/ 

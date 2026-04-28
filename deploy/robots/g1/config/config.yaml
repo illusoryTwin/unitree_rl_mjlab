@@ -7,8 +7,12 @@ FSM:
     Velocity:
       id: 3
       type: RLBase
-    G1Custom:
+    G1Reference:
       id: 4
+      type: RLBase
+
+    G1Soft:
+      id: 6
       type: RLBase
 
     Mimic_Dance1_subject2:
@@ -43,12 +47,14 @@ FSM:
     transitions:
       Passive: LT + B.on_pressed
       Velocity: RT + A.on_pressed
-      G1Custom: RT + Y.on_pressed
+      G1Reference: RT + Y.on_pressed
+      G1Soft: RT + X.on_pressed
     keyboard_transitions:
       Passive: "1"
       Velocity: "3"
-      G1Custom: "4"
-    auto_next: G1Custom
+      G1Reference: "4"
+      G1Soft: "6"
+    auto_next: G1Reference
     auto_delay: 3.0  # 2s standup trajectory + 1s stabilization
 
     kp: [
@@ -88,12 +94,20 @@ FSM:
     policy_dir: config/policy/velocity
 
 
-  G1Custom:
+  G1Reference:
     transitions:
       Passive: LT + B.on_pressed
     keyboard_transitions:
       Passive: "1"
-    policy_dir: config/policy/g1_custom
+    policy_dir: config/policy/g1_reference
+
+
+  G1Soft:
+    transitions:
+      Passive: LT + B.on_pressed
+    keyboard_transitions:
+      Passive: "1"
+    policy_dir: config/policy/g1_soft
 
 
   Mimic_Dance1_subject2:

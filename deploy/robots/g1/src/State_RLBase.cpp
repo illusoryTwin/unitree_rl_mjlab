@@ -29,7 +29,7 @@ REGISTER_OBSERVATION(keyboard_velocity_commands)
     return cmd;
 }
 
-// Arm joint position command for g1_custom task.
+// Arm joint position command for g1_reference task.
 // Returns fixed target positions from params for initial deploy.
 // TODO: read from gamepad or external controller for interactive use.
 REGISTER_OBSERVATION(joint_pos_command)
