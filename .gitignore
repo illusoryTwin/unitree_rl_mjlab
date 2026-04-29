@@ -19,3 +19,6 @@ simulate/build
 
 deploy/robots/g1/config/policy/v1/
 deploy/robots/g1/config/policy/g1_soft/v0/exported/*/ 
+
+# Local policy backups (ONNX etc.); canonical policy.onnx stays in exported/
+deploy/robots/g1/config/policy/*/v*/exported/_local/
