@@ -82,7 +82,7 @@ observations:
     history_length: 1
   stiffness_command:
     params:
-      value: 40.0
+      value: 20.0
     clip: null
     scale: [1.0]
     history_length: 1
